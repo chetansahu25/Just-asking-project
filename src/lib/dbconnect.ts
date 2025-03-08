@@ -6,6 +6,7 @@ type ConnectionObject = {
 
 const connection: ConnectionObject = {}
 
+const URI = process.env.MONGODB_URI
 async function dbConnect(): Promise<void> {
     if (connection.isConnected) {
         console.log("Already connected to database");
@@ -13,7 +14,7 @@ async function dbConnect(): Promise<void> {
     }
 
     try{
-        const db = await mongoose.connect(process.env.MONGODB_URI || '', {})
+        const db = await mongoose.connect('mongodb+srv://JustAskingUser:JustAskingPassword@justasking.cxleo.mongodb.net/' , {})
 
         connection.isConnected = db.connections[0].readyState
 

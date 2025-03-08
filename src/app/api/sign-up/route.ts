@@ -24,16 +24,16 @@ export async function POST(request: Request) {
                 }
             );
         }
+
         const existingUserByEmail = await UserModel.findOne({ email });
-        const verifyCode = Math.floor(
-            100000 + Math.random() + 900000
-        ).toString();
+        const verifyCode = Math.floor(100000 + Math.random() * 900000).toString();
+
         if (existingUserByEmail) {
             if (existingUserByEmail.isVerified) {
                 return Response.json(
                     {
                         success: false,
-                        message: "User already exist with this email",
+                        message: "User already exists with this email",
                     },
                     {
                         status: 400,
@@ -43,11 +43,19 @@ export async function POST(request: Request) {
                 const hashedPassword = await bcrypt.hash(password, 10);
                 existingUserByEmail.password = hashedPassword;
                 existingUserByEmail.verifyCode = verifyCode;
-                existingUserByEmail.verifyCodeExpiry = new Date(
-                    Date.now() + 3600000
-                );
+                existingUserByEmail.verifyCodeExpiry = new Date(Date.now() + 3600000);
 
                 await existingUserByEmail.save();
+
+                return Response.json(
+                    {
+                        success: true,
+                        message: "User updated successfully. Please verify your email",
+                    },
+                    {
+                        status: 200,
+                    }
+                );
             }
         } else {
             const hashedPassword = await bcrypt.hash(password, 10);
@@ -57,7 +65,7 @@ export async function POST(request: Request) {
             const newUser = new UserModel({
                 username,
                 email,
-                hashedPassword,
+                password: hashedPassword,
                 verifyCode,
                 verifyCodeExpiry: expiryDate,
                 isVerified: false,
@@ -67,23 +75,27 @@ export async function POST(request: Request) {
 
             await newUser.save();
 
-            //send Verification Email
-
-            const emailResponse = await sendVerificationEmail(
-                email,
-                username,
-                verifyCode
-            );
+            // Send Verification Email
+            const emailResponse = await sendVerificationEmail(email, username, verifyCode);
 
             if (!emailResponse.success) {
                 return Response.json(
                     {
                         success: true,
-                        message:
-                            "User registered successfully. please verify your email",
+                        message: "User registered successfully. Please verify your email",
                     },
                     {
                         status: 201,
+                    }
+                );
+            } else {
+                return Response.json(
+                    {
+                        success: false,
+                        message: "Failed to send verification email",
+                    },
+                    {
+                        status: 500,
                     }
                 );
             }
